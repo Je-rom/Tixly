@@ -1,0 +1,228 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres", "driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String            @id @default(uuid())
+  email                String            @unique
+  firstName            String
+  secondName           String
+  password             String?
+  role                 UserRole[]
+  googleId             String?
+  passwordChangedAt    DateTime?
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  active               Boolean           @default(true)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  events               Event[]
+  payments             Payment[]
+  eventAccesses        EventAccess[]
+  reviews              Review[]
+  organizerProfile     OrganizerProfile?
+  attendances          Attendee[]
+}
+
+model UserRole {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  role   Role
+}
+
+enum Role {
+  ATTENDEE
+  ORGANIZER
+  PODCASTER
+  MODERATOR
+  ADMIN
+}
+
+enum EventStatus {
+  AVAILABLE
+  CANCELLED
+  SOLD_OUT
+  DRAFT
+}
+
+model Event {
+  id                        String        @id @default(uuid())
+  user                      User          @relation(fields: [userId], references: [id])
+  userId                    String
+  ticketPrices              Ticket[]
+  payments                  Payment[]
+  title                     String
+  description               String
+  startTime                 DateTime      @db.Timestamptz
+  endTime                   DateTime?     @db.Timestamptz
+  timezone                  String
+  location                  String
+  status                    EventStatus   @default(DRAFT)
+  freeTicketsAvailable      Int?
+  eventImage                Bytes?
+  ticketCount               Int?
+  ticketAvailabilityEndDate DateTime?
+  slug                      String?       @unique
+  category                  Category      @relation(fields: [categoryId], references: [id])
+  categoryId                String
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  accesses                  EventAccess[]
+  reviews                   Review[]
+  attendees                 Attendee[]
+  podcast                   Podcast?
+  promoCodes                PromoCode[]
+  media                     EventMedia[]
+}
+
+model EventAccess {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  event      Event    @relation(fields: [eventId], references: [id])
+  eventId    String
+  accessCode String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum WebhookStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Payment {
+  id                      String        @id @default(uuid())
+  user                    User          @relation(fields: [userId], references: [id])
+  userId                  String
+  ticket                  Ticket        @relation(fields: [ticketId], references: [id])
+  ticketId                String
+  event                   Event         @relation(fields: [eventId], references: [id])
+  eventId                 String
+  amount                  Decimal
+  status                  PaymentStatus @default(PENDING)
+  paystack_reference      String        @unique
+  paystack_transaction_id String?
+  paystack_status         String?
+  webhook_payload         Json?
+  webhook_status          WebhookStatus @default(PENDING)
+  authorization_url       String
+  payment_method          String?
+  currency                String        @default("NGN")
+  charges                 Decimal?      @db.Decimal(10, 2)
+  paystack_customer_id    String?
+  payer_email             String?
+  retry_attempts          Int           @default(0)
+  webhook_received_at     DateTime?
+  webhook_failure_reason  String?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+}
+
+enum TicketType {
+  VIP
+  REGULAR
+  EARLY_BIRD
+}
+
+model Ticket {
+  id         String     @id @default(uuid())
+  event      Event      @relation(fields: [eventId], references: [id])
+  eventId    String
+  payments   Payment[]
+  ticketType TicketType
+  price      Decimal?   @db.Decimal(10, 2)
+  valid_day  String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+model OrganizerProfile {
+  id          String  @id @default(uuid())
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String  @unique
+  bio         String?
+  contactInfo String?
+  website     String?
+}
+
+model Category {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  events Event[]
+}
+
+model Attendee {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  checkedIn Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Podcast {
+  id          String    @id @default(uuid())
+  title       String
+  description String
+  audio_url   String
+  thumbnail   String?
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  created_At  DateTime  @default(now())
+  updated_At  DateTime  @updatedAt
+  event       Event?    @relation(fields: [eventId], references: [id])
+  eventId     String?   @unique
+}
+
+model PromoCode {
+  id         String    @id @default(uuid())
+  code       String    @unique
+  discount   Decimal   @db.Decimal(5, 2)
+  usageLimit Int?
+  event      Event?    @relation(fields: [eventId], references: [id])
+  eventId    String?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model EventMedia {
+  id        String   @id @default(uuid())
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  url       String
+  type      String
+  createdAt DateTime @default(now())
+}
