@@ -72,7 +72,7 @@ model Event {
   location                  String
   status                    EventStatus   @default(DRAFT)
   freeTicketsAvailable      Int?
-  eventImage                Bytes?
+  eventImage                String?
   ticketCount               Int?
   ticketAvailabilityEndDate DateTime?
   slug                      String?       @unique
