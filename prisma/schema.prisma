@@ -20,7 +20,7 @@ model User {
   firstName            String
   secondName           String
   password             String?
-  role                 UserRole[]
+  roles                 UserRole[]
   googleId             String?
   passwordChangedAt    DateTime?
   passwordResetToken   String?
