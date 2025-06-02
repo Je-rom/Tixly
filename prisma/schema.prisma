@@ -20,7 +20,7 @@ model User {
   firstName            String
   secondName           String
   password             String?
-  roles                 UserRole[]
+  roles                UserRole[]
   googleId             String?
   passwordChangedAt    DateTime?
   passwordResetToken   String?
@@ -34,6 +34,7 @@ model User {
   reviews              Review[]
   organizerProfile     OrganizerProfile?
   attendances          Attendee[]
+  AuditLog             AuditLog[]
 }
 
 model UserRole {
@@ -97,6 +98,27 @@ model EventAccess {
   accessCode String   @unique
   expiresAt  DateTime
   createdAt  DateTime @default(now())
+}
+
+enum AuditLogType {
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+  LOGOUT
+  LOGIN
+}
+
+model AuditLog {
+  id          String       @id @default(uuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  type        AuditLogType
+  description String
+  resource    String
+  resourceId  String?
+  createdAt   DateTime     @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime     @updatedAt
 }
 
 enum PaymentStatus {
