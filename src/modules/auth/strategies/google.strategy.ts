@@ -46,11 +46,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
             email: emails?.[0].value,
             firstName: name?.givenName,
             secondName: name?.familyName,
-            signUpMode: SignupMode.OAUTH, // Fix: Use OAUTH instead of GOOGLE
+            signUpMode: SignupMode.OAUTH, 
           },
         });
       } else if (!user.googleId) {
-        // Update existing user with Google ID if they signed up with email/password first
+        //Update existing user with Google ID if they signed up with email/password first
         user = await prisma.user.update({
           where: { id: user.id },
           data: {
