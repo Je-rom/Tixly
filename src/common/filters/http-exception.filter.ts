@@ -25,9 +25,11 @@ export class AllHttpExceptionFilter implements ExceptionFilter {
       if (typeof responseObj === 'string') {
         message = responseObj;
       } else if (typeof responseObj === 'object') {
-        const res = responseObj as Record<string, any>;
-        message = res.message || message;
-        errorResponse = res;
+        message = responseObj['message'] || message;
+        errorResponse = {
+          ...responseObj,
+          statusCode: status,
+        };
       }
     }
 

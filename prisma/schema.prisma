@@ -35,6 +35,12 @@ model User {
   organizerProfile     OrganizerProfile?
   attendances          Attendee[]
   AuditLog             AuditLog[]
+  signUpMode           SignupMode?
+}
+
+enum SignupMode {
+  OAUTH
+  REGULAR
 }
 
 model UserRole {
