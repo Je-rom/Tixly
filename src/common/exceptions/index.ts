@@ -17,6 +17,12 @@ export class BadRequestException extends BaseCustomException {
   }
 }
 
+export class UnauthorizedException extends BaseCustomException {
+  constructor(message: string, context?: Record<string, any>) {
+    super(message, HttpStatus.UNAUTHORIZED, 'UNAUTHORIZED', context);
+  }
+}
+
 export class ValidationException extends BaseCustomException {
   constructor(message: string, context?: Record<string, any>) {
     super(
@@ -43,6 +49,17 @@ export class NotFoundException extends BaseCustomException {
 export class DuplicateException extends BaseCustomException {
   constructor(message: string, context?: Record<string, any>) {
     super(message, HttpStatus.CONFLICT, 'DUPLICATE_RESOURCE', context);
+  }
+}
+
+export class InternalServerErrorException extends BaseCustomException {
+  constructor(message: string, context?: Record<string, any>) {
+    super(
+      message,
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      'SOMETHING_WENT_WRONG',
+      context,
+    );
   }
 }
 
