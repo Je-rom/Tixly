@@ -33,6 +33,7 @@ model User {
   eventAccesses        EventAccess[]
   reviews              Review[]
   organizerProfile     OrganizerProfile?
+  podcasterProfile     PodcasterProfile?
   attendances          Attendee[]
   AuditLog             AuditLog[]
   signUpMode           SignupMode?
@@ -54,7 +55,6 @@ enum Role {
   ATTENDEE
   ORGANIZER
   PODCASTER
-  MODERATOR
   ADMIN
 }
 
@@ -197,12 +197,29 @@ model Review {
 }
 
 model OrganizerProfile {
-  id          String  @id @default(uuid())
-  user        User    @relation(fields: [userId], references: [id])
-  userId      String  @unique
-  bio         String?
-  contactInfo String?
-  website     String?
+  id           String   @id @default(uuid())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String   @unique
+  companyName  String
+  websiteUrl   String?
+  businessType String
+  country      String
+  socialLinks  Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PodcasterProfile {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @unique
+  podcastName String
+  hostNames   String[]
+  websiteUrl  String?
+  country     String
+  socialLinks Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Category {

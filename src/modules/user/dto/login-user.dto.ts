@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-export class RegiserUserDto {
+export class LoginUserDto {
   @IsNotEmpty()
   @IsEmail()
   @Transform(({ value }) => value.toLowerCase())

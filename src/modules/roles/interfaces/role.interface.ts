@@ -4,7 +4,6 @@ export enum Role {
   ATTENDEE = 'ATTENDEE',
   ORGANIZER = 'ORGANIZER',
   PODCASTER = 'PODCASTER',
-  MODERATOR = 'MODERATOR',
   ADMIN = 'ADMIN',
 }
 

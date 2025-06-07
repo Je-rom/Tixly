@@ -1,5 +1,8 @@
 import {
+  ArrayNotEmpty,
+  IsArray,
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   Matches,
@@ -7,7 +10,41 @@ import {
   MinLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { Role } from 'src/modules/roles/interfaces/role.interface';
 
+export class OrganizerProfileDto {
+  @IsNotEmpty()
+  companyName: string;
+
+  @IsOptional()
+  websiteUrl?: string;
+
+  @IsNotEmpty()
+  businessType: string;
+
+  @IsNotEmpty()
+  country: string;
+
+  @IsOptional()
+  socialLinks?: Record<string, string>;
+}
+
+export class PodcasterProfileDto {
+  @IsNotEmpty()
+  podcastName: string;
+
+  @IsNotEmpty()
+  hostNames: string[];
+
+  @IsOptional()
+  websiteUrl?: string;
+
+  @IsNotEmpty()
+  country: string;
+
+  @IsOptional()
+  socialLinks?: Record<string, string>;
+}
 export class RegiserUserDto {
   @IsNotEmpty()
   firstName: string;
@@ -31,4 +68,16 @@ export class RegiserUserDto {
     },
   )
   password: string;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsEnum(Role, { each: true })
+  @Transform(({ value }) => (value?.length ? value : [Role.ATTENDEE]))
+  roles: Role[];
+
+  @IsOptional()
+  organizerProfile?: OrganizerProfileDto;
+
+  @IsOptional()
+  podcasterProfile?: PodcasterProfileDto;
 }

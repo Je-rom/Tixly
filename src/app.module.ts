@@ -7,6 +7,7 @@ import * as redisStore from 'cache-manager-ioredis';
 import { BullModule } from '@nestjs/bull';
 import { SharedModule } from './shared/shared.module';
 import { JwtModule } from '@nestjs/jwt';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { JwtModule } from '@nestjs/jwt';
     //   },
     // }),
     SharedModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
