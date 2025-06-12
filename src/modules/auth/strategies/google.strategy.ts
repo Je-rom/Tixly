@@ -41,7 +41,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
           OR: [{ googleId }, { email }],
         },
         include: {
-          roles: true,
+          userRole: true,
         },
       });
 
@@ -54,16 +54,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
             firstName: name?.givenName,
             secondName: name?.familyName,
             signUpMode: SignupMode.OAUTH,
-            roles: {
-              create: [
-                {
-                  role: 'ATTENDEE',
-                },
-              ],
+            userRole: {
+              create: {
+                role: 'ATTENDEE',
+              },
             },
           },
           include: {
-            roles: true,
+            userRole: true,
           },
         });
       }
@@ -75,7 +73,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
             googleId,
           },
           include: {
-            roles: true,
+            userRole: true,
           },
         });
       }

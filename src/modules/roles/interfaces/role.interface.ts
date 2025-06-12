@@ -3,7 +3,6 @@ import { Users } from 'src/modules/auth/interfaces/user-login.interface';
 export enum Role {
   ATTENDEE = 'ATTENDEE',
   ORGANIZER = 'ORGANIZER',
-  PODCASTER = 'PODCASTER',
   ADMIN = 'ADMIN',
 }
 

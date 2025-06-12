@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
+  IsString,
   Matches,
   MaxLength,
   MinLength,
@@ -29,26 +30,12 @@ export class OrganizerProfileDto {
   socialLinks?: Record<string, string>;
 }
 
-export class PodcasterProfileDto {
-  @IsNotEmpty()
-  podcastName: string;
-
-  @IsNotEmpty()
-  hostNames: string[];
-
-  @IsOptional()
-  websiteUrl?: string;
-
-  @IsNotEmpty()
-  country: string;
-
-  @IsOptional()
-  socialLinks?: Record<string, string>;
-}
 export class RegiserUserDto {
+  @IsString()
   @IsNotEmpty()
   firstName: string;
 
+  @IsString()
   @IsNotEmpty()
   secondName: string;
 
@@ -69,15 +56,12 @@ export class RegiserUserDto {
   )
   password: string;
 
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsEnum(Role, { each: true })
+  @IsEnum(Role, {
+    message: 'Role must be either ATTENDEE or ORGANIZER',
+  })
   @Transform(({ value }) => (value?.length ? value : [Role.ATTENDEE]))
-  roles: Role[];
+  role: Role;
 
   @IsOptional()
   organizerProfile?: OrganizerProfileDto;
-
-  @IsOptional()
-  podcasterProfile?: PodcasterProfileDto;
 }

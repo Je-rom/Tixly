@@ -21,6 +21,8 @@ import { SignupMode, User } from '@prisma/client';
 import prisma from 'src/shared/service/client';
 import { RegiserUserDto } from '../user/dto/create-user.dto';
 import { Role } from '../roles/interfaces/role.interface';
+import { LoginUserDto } from '../user/dto/login-user.dto';
+import { LoginResponseDto } from 'src/shared/interfaces';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -52,27 +54,25 @@ export class AuthService implements OnModuleInit {
       lastName: user.secondName,
       signUpMode: user.signUpMode,
     };
-    return this.jwtService.sign(payload);
+    return this.jwtService.signAsync(payload);
   }
 
-  async registerUser(regiserUserDto: RegiserUserDto) {
-    const ifEmailExist = await prisma.user.findFirst({
+  async registerUser(
+    regiserUserDto: RegiserUserDto,
+  ): Promise<Omit<User, 'password'>> {
+    const existingUser = await prisma.user.findFirst({
       where: {
         email: regiserUserDto.email,
       },
     });
 
-    if (ifEmailExist) {
+    if (existingUser) {
       throw new DuplicateException(
-        `A user with this email: ${ifEmailExist.email} already exists`,
+        `A user with this email: ${existingUser.email} already exists`,
       );
     }
 
     const hashPassword = await argon2.hash(regiserUserDto.password);
-
-    const rolesToCreate = regiserUserDto.roles.map((role) => ({
-      role,
-    }));
 
     const newUser = await prisma.user.create({
       data: {
@@ -81,12 +81,14 @@ export class AuthService implements OnModuleInit {
         firstName: regiserUserDto.firstName,
         secondName: regiserUserDto.secondName,
         signUpMode: SignupMode.REGULAR,
-        roles: {
-          create: rolesToCreate,
+        userRole: {
+          create: {
+            role: regiserUserDto.role,
+          },
         },
 
         //conditionally create organizerProfile
-        ...(regiserUserDto.roles.includes(Role.ORGANIZER) &&
+        ...(regiserUserDto.role.includes(Role.ORGANIZER) &&
           regiserUserDto.organizerProfile && {
             organizerProfile: {
               create: {
@@ -100,31 +102,61 @@ export class AuthService implements OnModuleInit {
               },
             },
           }),
-
-        //conditionally create podcasterProfile
-        ...(regiserUserDto.roles.includes(Role.PODCASTER) &&
-          regiserUserDto.podcasterProfile && {
-            podcasterProfile: {
-              create: {
-                podcastName: regiserUserDto.podcasterProfile.podcastName,
-                hostNames: regiserUserDto.podcasterProfile.hostNames,
-                websiteUrl: regiserUserDto.podcasterProfile.websiteUrl,
-                country: regiserUserDto.podcasterProfile.country,
-                socialLinks: regiserUserDto.podcasterProfile.socialLinks
-                  ? JSON.stringify(regiserUserDto.podcasterProfile.socialLinks)
-                  : undefined,
-              },
-            },
-          }),
       },
 
       include: {
-        roles: true,
+        userRole: true,
         organizerProfile: true,
-        podcasterProfile: true,
       },
     });
+    const { password, ...userWithoutPassword } = newUser;
+    return userWithoutPassword;
+  }
 
-    return newUser;
+  async loginUser(loginUserDto: LoginUserDto): Promise<LoginResponseDto> {
+    const user = await prisma.user.findFirst({
+      where: {
+        email: loginUserDto.email,
+      },
+      include: {
+        userRole: true,
+      },
+    });
+    if (!user) {
+      throw new BadRequestException('Incorrect username or password');
+    }
+
+    if (!user.password) {
+      throw new BadRequestException('Password is required');
+    }
+
+    const checkPassword = await argon2.verify(
+      user.password,
+      loginUserDto.password,
+    );
+    if (!checkPassword) {
+      throw new UnauthorizedException(
+        'Invalid Password, please enter your correct password',
+      );
+    }
+    const payload = {
+      sub: user.id,
+      firstname: user.firstName,
+      lastname: user.secondName,
+      email: user.email,
+      role: user.userRole?.role ?? null,
+    };
+
+    const access_token = await this.jwtService.signAsync(payload);
+    return {
+      token: access_token,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        secondName: user.secondName,
+        email: user.email,
+        role: user.userRole?.role ?? null,
+      },
+    };
   }
 }
