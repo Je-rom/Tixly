@@ -37,7 +37,7 @@ export class TemplateService {
     const templateData = {
       FIRST_NAME: data.firstName,
       VERIFICATION_URL: data.verificationUrl,
-      APP_NAME: 'Crowdia',
+      APP_NAME: 'Tixly',
       SUPPORT_EMAIL:
         data.supportEmail || process.env.SUPPORT_EMAIL || 'support@example.com',
     };
@@ -54,7 +54,7 @@ export class TemplateService {
     const templateData = {
       FIRST_NAME: data.firstName,
       RESET_URL: data.resetUrl,
-      APP_NAME: 'Crowdia',
+      APP_NAME: 'Tixly',
       SUPPORT_EMAIL:
         data.supportEmail || process.env.SUPPORT_EMAIL || 'support@example.com',
     };
@@ -68,7 +68,7 @@ export class TemplateService {
   }): Promise<string> {
     const templateData = {
       FIRST_NAME: data.firstName,
-      APP_NAME: 'Crowdia',
+      APP_NAME: 'Tixly',
     };
 
     return this.getEmailTemplate('welcome', templateData);
