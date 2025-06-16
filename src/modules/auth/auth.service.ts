@@ -147,7 +147,7 @@ export class AuthService implements OnModuleInit {
 
     await this.notificationService.sendEmail(
       newUser.email,
-      'Verify your Crowdia account',
+      'Verify your Tixly account',
       `Hi ${newUser.firstName}, please verify your account using this link: ${verificationUrl}`,
       html,
     );
