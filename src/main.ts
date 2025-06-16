@@ -1,7 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { AllHttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { json, urlencoded, NextFunction, Request, Response } from 'express';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,7 +18,15 @@ async function bootstrap() {
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));
 
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
   app.useGlobalFilters(new AllHttpExceptionFilter());
+  app.useGlobalInterceptors(new ResponseInterceptor());
 
   //middleware: reject empty request bodies for POST/PUT
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -32,6 +42,6 @@ async function bootstrap() {
     next();
   });
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 9000);
 }
 bootstrap();

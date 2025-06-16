@@ -7,20 +7,23 @@ import { AuthController } from './auth.controller';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaService } from 'src/shared/service/prisma.service';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { NotificationModule } from '../notification/notification.module';
+import { TemplateService } from 'src/templates/template.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       load: [googleConfig],
-      isGlobal: true, // optional but good if config is used globally
+      isGlobal: true,
     }),
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1d' },
+      signOptions: { expiresIn: '15m' },
     }),
+    NotificationModule,
   ],
-  providers: [AuthService, GoogleStrategy, PrismaService],
+  providers: [AuthService, GoogleStrategy, PrismaService, TemplateService],
   controllers: [AuthController],
   exports: [JwtModule],
 })

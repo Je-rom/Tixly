@@ -15,28 +15,30 @@ datasource db {
 }
 
 model User {
-  id                   String            @id @default(uuid())
-  email                String            @unique
-  firstName            String
-  secondName           String
-  password             String?
-  roles                UserRole[]
-  googleId             String?
-  passwordChangedAt    DateTime?
-  passwordResetToken   String?
-  passwordResetExpires DateTime?
-  active               Boolean           @default(true)
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-  events               Event[]
-  payments             Payment[]
-  eventAccesses        EventAccess[]
-  reviews              Review[]
-  organizerProfile     OrganizerProfile?
-  podcasterProfile     PodcasterProfile?
-  attendances          Attendee[]
-  AuditLog             AuditLog[]
-  signUpMode           SignupMode?
+  id                     String            @id @default(uuid())
+  email                  String            @unique
+  firstName              String
+  secondName             String
+  password               String?
+  userRole               UserRole?
+  googleId               String?
+  passwordChangedAt      DateTime?
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
+  emailVerificationToken String?
+  emailTokenExpires      DateTime?
+  active                 Boolean           @default(true)
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  events                 Event[]
+  payments               Payment[]
+  eventAccesses          EventAccess[]
+  reviews                Review[]
+  organizerProfile       OrganizerProfile?
+  attendances            Attendee[]
+  AuditLog               AuditLog[]
+  signUpMode             SignupMode?
+  refreshToken           String?
 }
 
 enum SignupMode {
@@ -47,14 +49,13 @@ enum SignupMode {
 model UserRole {
   id     String @id @default(uuid())
   user   User   @relation(fields: [userId], references: [id])
-  userId String
+  userId String @unique
   role   Role
 }
 
 enum Role {
   ATTENDEE
   ORGANIZER
-  PODCASTER
   ADMIN
 }
 
@@ -90,7 +91,6 @@ model Event {
   accesses                  EventAccess[]
   reviews                   Review[]
   attendees                 Attendee[]
-  podcast                   Podcast?
   promoCodes                PromoCode[]
   media                     EventMedia[]
 }
@@ -209,19 +209,6 @@ model OrganizerProfile {
   updatedAt    DateTime @updatedAt
 }
 
-model PodcasterProfile {
-  id          String   @id @default(uuid())
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String   @unique
-  podcastName String
-  hostNames   String[]
-  websiteUrl  String?
-  country     String
-  socialLinks Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
 model Category {
   id     String  @id @default(uuid())
   name   String  @unique
@@ -236,20 +223,6 @@ model Attendee {
   eventId   String
   checkedIn Boolean  @default(false)
   createdAt DateTime @default(now())
-}
-
-model Podcast {
-  id          String    @id @default(uuid())
-  title       String
-  description String
-  audio_url   String
-  thumbnail   String?
-  published   Boolean   @default(false)
-  publishedAt DateTime?
-  created_At  DateTime  @default(now())
-  updated_At  DateTime  @updatedAt
-  event       Event?    @relation(fields: [eventId], references: [id])
-  eventId     String?   @unique
 }
 
 model PromoCode {
