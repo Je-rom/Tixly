@@ -8,6 +8,8 @@ import { BullModule } from '@nestjs/bull';
 import { SharedModule } from './shared/shared.module';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from './modules/auth/auth.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import sendgridConfig from './common/config/sendgrid.config';
 
 @Module({
   imports: [
@@ -16,7 +18,10 @@ import { AuthModule } from './modules/auth/auth.module';
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1h', algorithm: 'HS512' },
     }),
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [sendgridConfig],
+    }),
     CacheModule.registerAsync({
       isGlobal: true,
       useFactory: () => ({
@@ -34,6 +39,7 @@ import { AuthModule } from './modules/auth/auth.module';
     // }),
     SharedModule,
     AuthModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

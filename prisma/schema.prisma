@@ -15,27 +15,30 @@ datasource db {
 }
 
 model User {
-  id                   String            @id @default(uuid())
-  email                String            @unique
-  firstName            String
-  secondName           String
-  password             String?
-  userRole             UserRole?
-  googleId             String?
-  passwordChangedAt    DateTime?
-  passwordResetToken   String?
-  passwordResetExpires DateTime?
-  active               Boolean           @default(true)
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-  events               Event[]
-  payments             Payment[]
-  eventAccesses        EventAccess[]
-  reviews              Review[]
-  organizerProfile     OrganizerProfile?
-  attendances          Attendee[]
-  AuditLog             AuditLog[]
-  signUpMode           SignupMode?
+  id                     String            @id @default(uuid())
+  email                  String            @unique
+  firstName              String
+  secondName             String
+  password               String?
+  userRole               UserRole?
+  googleId               String?
+  passwordChangedAt      DateTime?
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
+  emailVerificationToken String?
+  emailTokenExpires      DateTime?
+  active                 Boolean           @default(true)
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  events                 Event[]
+  payments               Payment[]
+  eventAccesses          EventAccess[]
+  reviews                Review[]
+  organizerProfile       OrganizerProfile?
+  attendances            Attendee[]
+  AuditLog               AuditLog[]
+  signUpMode             SignupMode?
+  refreshToken           String?
 }
 
 enum SignupMode {

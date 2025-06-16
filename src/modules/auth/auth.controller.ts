@@ -4,6 +4,7 @@ import {
   Get,
   HttpStatus,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -12,10 +13,14 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { RegiserUserDto } from '../user/dto/create-user.dto';
 import { LoginUserDto } from '../user/dto/login-user.dto';
-
+import { ConfigService } from '@nestjs/config';
+import { Response } from 'express';
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService,
+  ) {}
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
@@ -39,7 +44,6 @@ export class AuthController {
   async registerUser(@Req() req, @Body() registerUser: RegiserUserDto) {
     const registeredUser = await this.authService.registerUser(registerUser);
     return {
-      message: 'User successfully registered',
       data: registeredUser,
     };
   }
@@ -51,5 +55,19 @@ export class AuthController {
       message: 'User successfully logged in',
       data: loggedInUser,
     };
+  }
+
+  @Post('refresh')
+  async refreshToken(@Body() body: { refreshToken: string }) {
+    return await this.authService.refreshToken(body.refreshToken);
+  }
+
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string, @Res() res: Response) {
+    await this.authService.verifyEmailToken(token);
+    return res.json({
+      success: true,
+      message: 'Email verified successfully! Account is now active.',
+    });
   }
 }
