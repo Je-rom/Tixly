@@ -14,7 +14,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { RegiserUserDto } from '../user/dto/create-user.dto';
 import { LoginUserDto } from '../user/dto/login-user.dto';
 import { ConfigService } from '@nestjs/config';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { ForgotPasswordDto } from '../user/dto/forgot-password.dto';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -69,5 +70,13 @@ export class AuthController {
       success: true,
       message: 'Email verified successfully! Account is now active.',
     });
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(
+    @Body() forgotPassword: ForgotPasswordDto,
+    @Req() req: Request,
+  ) {
+    return await this.authService.forgotPassword(forgotPassword, req);
   }
 }
