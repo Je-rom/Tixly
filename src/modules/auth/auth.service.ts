@@ -26,6 +26,8 @@ import { LoginUserDto } from '../user/dto/login-user.dto';
 import { LoginResponseDto } from 'src/shared/interfaces';
 import { NotificationService } from '../notification/notification.service';
 import { TemplateService } from 'src/templates/template.service';
+import { ForgotPasswordDto } from '../user/dto/forgot-password.dto';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -138,7 +140,7 @@ export class AuthService implements OnModuleInit {
       },
     });
 
-    const verificationUrl = `http://localhost:9000/verify-email?token=${emailVerificationToken}`;
+    const verificationUrl = `http://localhost:3000/verify-email?token=${emailVerificationToken}`;
 
     const html = await this.templateService.getEmailVerificationTemplate({
       firstName: newUser.firstName,
@@ -308,6 +310,57 @@ export class AuthService implements OnModuleInit {
         emailTokenExpires: null,
       },
     });
+  }
+
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto,
+    req: Request,
+  ): Promise<{
+    message: string;
+    emailStatus: { success: boolean; message: string };
+  }> {
+    const user = await prisma.user.findFirst({
+      where: {
+        email: forgotPasswordDto.email,
+      },
+    });
+
+    if (!user) {
+      return {
+        message:
+          'If an account with that email exists, we have sent a password reset link.',
+        emailStatus: { success: true, message: 'Email sent successfully' },
+      };
+    }
+
+    const passwordToken = crypto.randomBytes(32).toString('hex');
+    const resetURL = `${req.protocol}://${req.get('host')}/auth/reset-password/${passwordToken}`;
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: passwordToken,
+        passwordResetExpires: new Date(Date.now() + 15 * 60 * 1000),
+      },
+    });
+
+    const html = await this.templateService.getPasswordResetTemplate({
+      firstName: user.firstName,
+      resetUrl: resetURL,
+    });
+
+    const emailResponse = await this.notificationService.sendEmail(
+      user.email,
+      'Reset Your Password Instructions',
+      `Hi ${user.firstName}, here's how to reset your password, click on the link : ${resetURL}`,
+      html,
+    );
+
+    return {
+      message:
+        'If an account with that email exists, we have sent a password reset link.',
+      emailStatus: emailResponse,
+    };
   }
 
   async logout(userId: string): Promise<{ message: string }> {
