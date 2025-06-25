@@ -11,11 +11,11 @@ export class TemplateService {
     data: Record<string, string>,
   ): Promise<string> {
     try {
-      //Load template file
+      //load template file
       const templatePath = join(this.templatesPath, `${templateName}.html`);
       let template = readFileSync(templatePath, 'utf-8');
 
-      //Replace all placeholders with actual data
+      //replace all placeholders with actual data
       Object.keys(data).forEach((key) => {
         const placeholder = `{{${key}}}`;
         template = template.replace(new RegExp(placeholder, 'g'), data[key]);
@@ -60,6 +60,23 @@ export class TemplateService {
     };
 
     return this.getEmailTemplate('password-reset', templateData);
+  }
+
+  async getPasswordResetSuccessTemplate(data: {
+    firstName: string;
+    loginUrl: string;
+    appName?: string;
+    supportEmail?: string;
+  }): Promise<string> {
+    const templateData = {
+      FIRST_NAME: data.firstName,
+      LOGIN_URL: data.loginUrl,
+      APP_NAME: 'Tixly',
+      SUPPORT_EMAIL:
+        data.supportEmail || process.env.SUPPORT_EMAIL || 'support@example.com',
+    };
+
+    return this.getEmailTemplate('password-reset-success', templateData);
   }
 
   async getWelcomeTemplate(data: {
