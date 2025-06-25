@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Param,
   Post,
   Query,
   Req,
@@ -16,6 +17,7 @@ import { LoginUserDto } from '../user/dto/login-user.dto';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { ForgotPasswordDto } from '../user/dto/forgot-password.dto';
+import { ResetPasswordDto } from '../user/dto/reset-password.dto';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -78,5 +80,13 @@ export class AuthController {
     @Req() req: Request,
   ) {
     return await this.authService.forgotPassword(forgotPassword, req);
+  }
+
+  @Post('reset-password/:token')
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+    @Param('token') token: string,
+  ) {
+    return await this.authService.resetPassword(token, resetPasswordDto);
   }
 }

@@ -28,6 +28,7 @@ import { NotificationService } from '../notification/notification.service';
 import { TemplateService } from 'src/templates/template.service';
 import { ForgotPasswordDto } from '../user/dto/forgot-password.dto';
 import { Request } from 'express';
+import { ResetPasswordDto } from '../user/dto/reset-password.dto';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -359,6 +360,56 @@ export class AuthService implements OnModuleInit {
     return {
       message:
         'If an account with that email exists, we have sent a password reset link.',
+      emailStatus: emailResponse,
+    };
+  }
+
+  async resetPassword(
+    token: string,
+    resetPasswordDto: ResetPasswordDto,
+  ): Promise<{
+    message: string;
+    emailStatus: { success: boolean; message: string };
+  }> {
+    const user = await prisma.user.findFirst({
+      where: {
+        passwordResetToken: token,
+        passwordResetExpires: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired password reset token.');
+    }
+
+    const hashedPassword = await argon2.hash(resetPasswordDto.new_password);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        refreshToken: null,
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+        passwordChangedAt: new Date(),
+      },
+    });
+
+    const html = await this.templateService.getPasswordResetSuccessTemplate({
+      firstName: user.firstName,
+      loginUrl: 'http://localhost:3000',
+    });
+
+    const emailResponse = await this.notificationService.sendEmail(
+      user.email,
+      'Password Reset Successful',
+      `Hi ${user.firstName}, your password has been changed successfully`,
+      html,
+    );
+    return {
+      message: 'Password reset successful. You can now log in.',
       emailStatus: emailResponse,
     };
   }
