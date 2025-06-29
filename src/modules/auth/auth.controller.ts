@@ -4,12 +4,14 @@ import {
   Get,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { UnauthorizedException } from 'src/common/exceptions/index';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { RegiserUserDto } from '../user/dto/create-user.dto';
@@ -18,6 +20,9 @@ import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { ForgotPasswordDto } from '../user/dto/forgot-password.dto';
 import { ResetPasswordDto } from '../user/dto/reset-password.dto';
+import { UpdatePasswordDto } from '../user/dto/update-password.dto';
+import { JwtAuthGuard } from 'src/common/guards/auth.guard';
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -88,5 +93,18 @@ export class AuthController {
     @Param('token') token: string,
   ) {
     return await this.authService.resetPassword(token, resetPasswordDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('update-password')
+  async updatePassword(
+    @Body() updatePasswordDto: UpdatePasswordDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('User authentication required.');
+    }
+    return await this.authService.updatePassword(updatePasswordDto, userId);
   }
 }

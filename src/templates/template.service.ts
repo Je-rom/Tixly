@@ -79,6 +79,23 @@ export class TemplateService {
     return this.getEmailTemplate('password-reset-success', templateData);
   }
 
+  async getPasswordUpdateConfirmationTemplate(data: {
+    firstName: string;
+    loginUrl: string;
+    appName?: string;
+    supportEmail?: string;
+  }): Promise<string> {
+    const templateData = {
+      FIRST_NAME: data.firstName,
+      LOGIN_URL: data.loginUrl,
+      APP_NAME: 'Tixly',
+      SUPPORT_EMAIL:
+        data.supportEmail || process.env.SUPPORT_EMAIL || 'support@example.com',
+    };
+
+    return this.getEmailTemplate('update-password', templateData);
+  }
+
   async getWelcomeTemplate(data: {
     firstName: string;
     appName?: string;

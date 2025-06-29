@@ -29,6 +29,7 @@ import { TemplateService } from 'src/templates/template.service';
 import { ForgotPasswordDto } from '../user/dto/forgot-password.dto';
 import { Request } from 'express';
 import { ResetPasswordDto } from '../user/dto/reset-password.dto';
+import { UpdatePasswordDto } from '../user/dto/update-password.dto';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -384,7 +385,7 @@ export class AuthService implements OnModuleInit {
       throw new BadRequestException('Invalid or expired password reset token.');
     }
 
-    const hashedPassword = await argon2.hash(resetPasswordDto.new_password);
+    const hashedPassword = await argon2.hash(resetPasswordDto.newPassword);
 
     await prisma.user.update({
       where: { id: user.id },
@@ -410,6 +411,58 @@ export class AuthService implements OnModuleInit {
     );
     return {
       message: 'Password reset successful. You can now log in.',
+      emailStatus: emailResponse,
+    };
+  }
+
+  async updatePassword(
+    updatePasswordDto: UpdatePasswordDto,
+    userId: string,
+  ): Promise<{
+    message: string;
+    emailStatus: { success: boolean; message: string };
+  }> {
+    const { currentPassword, newPassword } = updatePasswordDto;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || !user.password) {
+      throw new UnauthorizedException('User not found or password not set.');
+    }
+
+    const isPasswordValid = await argon2.verify(user.password, currentPassword);
+
+    if (!isPasswordValid) {
+      throw new BadRequestException('Current password is incorrect.');
+    }
+
+    const hashedNewPassword = await argon2.hash(newPassword);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedNewPassword,
+        refreshToken: null,
+        passwordChangedAt: new Date(),
+      },
+    });
+
+    const html =
+      await this.templateService.getPasswordUpdateConfirmationTemplate({
+        firstName: user.firstName,
+        loginUrl: 'http://localhost:3000',
+      });
+
+    const emailResponse = await this.notificationService.sendEmail(
+      user.email,
+      'Your Password Has Been Changed',
+      `Hi ${user.firstName}, your password was successfully updated.`,
+      html,
+    );
+    return {
+      message: 'Password updated successfully.',
       emailStatus: emailResponse,
     };
   }

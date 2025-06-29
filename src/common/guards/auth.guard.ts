@@ -43,10 +43,10 @@ export class JwtAuthGuard implements CanActivate {
 
     //check if user exist
     const user = await prisma.user.findUnique({
-      where: { id: decodedToken.id },
+      where: { id: decodedToken.sub },
     });
     if (!user) {
-      this.logger.warn(`User with id ${decodedToken.id} not found`);
+      this.logger.warn(`User with id ${decodedToken.sub} not found`);
       throw new UnauthorizedException('Access denied: User not found');
     }
 

@@ -1,6 +1,10 @@
 import { IsString, IsNotEmpty, MinLength, Matches } from 'class-validator';
 
-export class ResetPasswordDto {
+export class UpdatePasswordDto {
+  @IsNotEmpty({ message: 'Please input your old password' })
+  @IsString()
+  currentPassword: string;
+
   @IsNotEmpty({ message: 'Please input your new password' })
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters' })
