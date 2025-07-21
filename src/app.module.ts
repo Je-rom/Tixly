@@ -9,6 +9,7 @@ import { SharedModule } from './shared/shared.module';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from './modules/auth/auth.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { EventModule } from './modules/event/event.module';
 import sendgridConfig from './common/config/sendgrid.config';
 
 @Module({
@@ -40,6 +41,7 @@ import sendgridConfig from './common/config/sendgrid.config';
     SharedModule,
     AuthModule,
     NotificationModule,
+    EventModule,
   ],
   controllers: [AppController],
   providers: [AppService],

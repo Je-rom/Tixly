@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["fullTextSearchPostgres", "driverAdapters"]
@@ -31,14 +25,18 @@ model User {
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
   events                 Event[]
+  tickets                Ticket[]
   payments               Payment[]
   eventAccesses          EventAccess[]
   reviews                Review[]
   organizerProfile       OrganizerProfile?
   attendances            Attendee[]
-  AuditLog               AuditLog[]
+  auditLogs              AuditLog[]
   signUpMode             SignupMode?
   refreshToken           String?
+
+  @@index([email])
+  @@index([active])
 }
 
 enum SignupMode {
@@ -48,7 +46,7 @@ enum SignupMode {
 
 model UserRole {
   id     String @id @default(uuid())
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @unique
   role   Role
 }
@@ -59,51 +57,92 @@ enum Role {
   ADMIN
 }
 
-enum EventStatus {
-  AVAILABLE
-  CANCELLED
-  SOLD_OUT
-  DRAFT
+model Event {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  title       String
+  description String   @db.Text
+  startTime   DateTime @db.Timestamptz
+  endTime     DateTime @db.Timestamptz
+  timezone    String
+
+  location    String
+  venue       Json
+  coordinates Json?
+
+  status      EventStatus @default(DRAFT)
+  maxCapacity Int
+  currency    Currency    @default(NGN)
+  slug        String      @unique @default(cuid())
+  eventImage  String?
+
+  organizerName  String
+  organizerEmail String
+  organizerPhone String?
+
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticketTypes TicketType[]
+  payments    Payment[]
+  accesses    EventAccess[]
+  reviews     Review[]
+  attendees   Attendee[]
+  promoCodes  PromoCode[]
+  media       EventMedia[]
+
+  @@index([status])
+  @@index([startTime])
+  @@index([categoryId])
+  @@index([userId])
+  @@index([slug])
 }
 
-model Event {
-  id                        String        @id @default(uuid())
-  user                      User          @relation(fields: [userId], references: [id])
-  userId                    String
-  ticketPrices              Ticket[]
-  payments                  Payment[]
-  title                     String
-  description               String
-  startTime                 DateTime      @db.Timestamptz
-  endTime                   DateTime?     @db.Timestamptz
-  timezone                  String
-  location                  String
-  status                    EventStatus   @default(DRAFT)
-  freeTicketsAvailable      Int?
-  eventImage                String?
-  ticketCount               Int?
-  ticketAvailabilityEndDate DateTime?
-  slug                      String?       @unique
-  category                  Category      @relation(fields: [categoryId], references: [id])
-  categoryId                String
-  createdAt                 DateTime      @default(now())
-  updatedAt                 DateTime      @updatedAt
-  accesses                  EventAccess[]
-  reviews                   Review[]
-  attendees                 Attendee[]
-  promoCodes                PromoCode[]
-  media                     EventMedia[]
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  LIVE
+  SOLD_OUT
+  CANCELLED
+  POSTPONED
+  COMPLETED
 }
 
 model EventAccess {
-  id         String   @id @default(uuid())
-  user       User     @relation(fields: [userId], references: [id])
+  id         String          @id @default(uuid())
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String
-  event      Event    @relation(fields: [eventId], references: [id])
+  event      Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId    String
-  accessCode String   @unique
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
+  accessType EventAccessType @default(VIEWER)
+  accessCode String          @unique
+  expiresAt  DateTime?
+  createdAt  DateTime        @default(now())
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+}
+
+enum EventAccessType {
+  ADMIN
+  MODERATOR
+  VIEWER
+}
+
+enum Currency {
+  NGN
+  USD
+  GBP
+  EUR
+  GHS
+  KES
+  ZAR
+  XAF
 }
 
 enum AuditLogType {
@@ -118,19 +157,25 @@ enum AuditLogType {
 model AuditLog {
   id          String       @id @default(uuid())
   userId      String
-  user        User         @relation(fields: [userId], references: [id])
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   type        AuditLogType
   description String
   resource    String
   resourceId  String?
   createdAt   DateTime     @default(now()) @db.Timestamp(6)
   updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([type])
 }
 
 enum PaymentStatus {
   PENDING
   SUCCESS
   FAILED
+  CANCELLED
+  REFUNDED
+  EXPIRED
 }
 
 enum WebhookStatus {
@@ -139,72 +184,149 @@ enum WebhookStatus {
   FAILED
 }
 
-model Payment {
-  id                      String        @id @default(uuid())
-  user                    User          @relation(fields: [userId], references: [id])
-  userId                  String
-  ticket                  Ticket        @relation(fields: [ticketId], references: [id])
-  ticketId                String
-  event                   Event         @relation(fields: [eventId], references: [id])
-  eventId                 String
-  amount                  Decimal
-  status                  PaymentStatus @default(PENDING)
-  paystack_reference      String        @unique
-  paystack_transaction_id String?
-  paystack_status         String?
-  webhook_payload         Json?
-  webhook_status          WebhookStatus @default(PENDING)
-  authorization_url       String
-  payment_method          String?
-  currency                String        @default("NGN")
-  charges                 Decimal?      @db.Decimal(10, 2)
-  paystack_customer_id    String?
-  payer_email             String?
-  retry_attempts          Int           @default(0)
-  webhook_received_at     DateTime?
-  webhook_failure_reason  String?
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
+enum PaymentProvider {
+  PAYSTACK
+  FLUTTERWAVE
+  STRIPE
 }
 
-enum TicketType {
-  VIP
-  REGULAR
-  EARLY_BIRD
+model Payment {
+  id       String @id @default(uuid())
+  user     User   @relation(fields: [userId], references: [id])
+  userId   String
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+  ticketId String
+  event    Event  @relation(fields: [eventId], references: [id])
+  eventId  String
+
+  amount   Decimal         @db.Decimal(10, 2)
+  currency Currency        @default(NGN)
+  status   PaymentStatus   @default(PENDING)
+  provider PaymentProvider
+
+  provider_reference      String  @unique
+  provider_transaction_id String?
+  provider_status         String?
+  provider_customer_id    String?
+  authorization_url       String?
+  payment_method          String?
+
+  charges           Decimal?  @db.Decimal(10, 2)
+  platform_fee      Decimal?  @db.Decimal(10, 2)
+  exchange_rate     Decimal?  @db.Decimal(10, 6)
+  original_amount   Decimal?  @db.Decimal(10, 2)
+  original_currency Currency?
+
+  webhook_payload        Json?
+  webhook_status         WebhookStatus @default(PENDING)
+  webhook_received_at    DateTime?
+  webhook_failure_reason String?
+
+  retry_attempts Int     @default(0)
+  payer_email    String?
+
+  refund_amount Decimal?  @db.Decimal(10, 2)
+  refund_reason String?
+  refunded_at   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([provider])
+  @@index([eventId])
+}
+
+model TicketType {
+  id      String @id @default(uuid())
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+
+  name        String
+  description String?        @db.Text
+  category    TicketCategory @default(PAID)
+
+  price    Decimal  @db.Decimal(10, 2)
+  currency Currency @default(NGN)
+
+  maxQuantity  Int?
+  soldQuantity Int  @default(0)
+
+  saleStartDate DateTime? @db.Timestamptz
+  saleEndDate   DateTime? @db.Timestamptz
+
+  minPerOrder Int @default(1)
+  maxPerOrder Int @default(10)
+
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  tickets   Ticket[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, name])
+  @@index([eventId, isActive])
+}
+
+enum TicketCategory {
+  PAID
+  FREE
+  INVITATION_ONLY
 }
 
 model Ticket {
-  id         String     @id @default(uuid())
-  event      Event      @relation(fields: [eventId], references: [id])
-  eventId    String
-  payments   Payment[]
-  ticketType TicketType
-  price      Decimal?   @db.Decimal(10, 2)
-  valid_day  String?
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id           String     @id @default(uuid())
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
+  ticketTypeId String
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String
+
+  quantity   Int      @default(1)
+  totalPrice Decimal  @db.Decimal(10, 2)
+  currency   Currency @default(NGN)
+
+  isUsed       Boolean   @default(false)
+  usedAt       DateTime?
+  qrCode       String?   @unique
+  ticketNumber String    @unique @default(cuid())
+
+  attendeeName  String?
+  attendeeEmail String?
+
+  payments  Payment[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([ticketTypeId])
+  @@index([qrCode])
 }
 
 model Review {
   id        String   @id @default(uuid())
-  event     Event    @relation(fields: [eventId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId   String
   user      User     @relation(fields: [userId], references: [id])
   userId    String
-  rating    Int
-  comment   String?
+  rating    Int      @db.SmallInt
+  comment   String?  @db.Text
   createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@index([eventId])
 }
 
 model OrganizerProfile {
   id           String   @id @default(uuid())
-  user         User     @relation(fields: [userId], references: [id])
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String   @unique
   companyName  String
   websiteUrl   String?
   businessType String
   country      String
   socialLinks  Json?
+  isVerified   Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -212,35 +334,49 @@ model OrganizerProfile {
 model Category {
   id     String  @id @default(uuid())
   name   String  @unique
+  slug   String  @unique @default(cuid())
   events Event[]
 }
 
 model Attendee {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  event     Event    @relation(fields: [eventId], references: [id])
-  eventId   String
-  checkedIn Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id          String    @id @default(uuid())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId     String
+  checkedIn   Boolean   @default(false)
+  checkedInAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, eventId])
+  @@index([eventId])
 }
 
 model PromoCode {
-  id         String    @id @default(uuid())
-  code       String    @unique
-  discount   Decimal   @db.Decimal(5, 2)
-  usageLimit Int?
-  event      Event?    @relation(fields: [eventId], references: [id])
-  eventId    String?
-  expiresAt  DateTime?
-  createdAt  DateTime  @default(now())
+  id           String    @id @default(uuid())
+  code         String    @unique
+  discount     Decimal   @db.Decimal(5, 2)
+  discountType String    @default("PERCENTAGE")
+  usageLimit   Int?
+  usedCount    Int       @default(0)
+  event        Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId      String?
+  expiresAt    DateTime?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
+  @@index([code])
+  @@index([eventId])
 }
 
 model EventMedia {
   id        String   @id @default(uuid())
-  event     Event    @relation(fields: [eventId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId   String
   url       String
   type      String
+  title     String?
   createdAt DateTime @default(now())
+
+  @@index([eventId])
 }

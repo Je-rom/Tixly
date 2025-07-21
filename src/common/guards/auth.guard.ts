@@ -5,7 +5,6 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Users } from 'src/modules/auth/interfaces/user-login.interface';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import prisma from 'src/shared/service/client';
